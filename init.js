@@ -27,7 +27,7 @@ divUI.appendChild(headerUI);
 let labelNumPoints = document.createElement('label');
 labelNumPoints.for='numPoints';
 labelNumPoints.innerHTML='Number of points: ';
-labelNumPoints.id='inputPoints';
+labelNumPoints.id='labelNumPoints';
 divUI.appendChild(labelNumPoints);
 
 let inputNumPoints = document.createElement("input");

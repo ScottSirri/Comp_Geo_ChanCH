@@ -16,7 +16,7 @@ I used code implementing mergesort from stackabuse.com/merge-sort-in-javascript 
 I animated the generation of points, partitioning of them into subsets, generation of sub-convex hulls, the calculation of tangents between convex hull points, and the march around the exterior.
 
 	4.
-Buttons are selectively disabled depending on the stage of the algorithm so it's clear to the user what the next step is and execution cannot be jumbled.
+Buttons are selectively disabled depending on the stage of the algorithm so it's clear to the user what the next step is and execution cannot be jumbled. Users have the option of seeing the candidate tangents at each step, or just calculating each 'maximum-angle' tangent with a single button press.
 I adhered strictly to the implementation of the algorithm except for the implementation of binary search to find the tangent on each convex hull. I just implemented a linear search because it's simpler, the practical runtime increase is negligible, and it would not serve any demonstratory purpose to implement it.
 I applied randomized color-coding to the points and hulls to improve the clarity of the display.
 I constrained the generation of points to within a margin from the canvas edges for ease of comprehension.

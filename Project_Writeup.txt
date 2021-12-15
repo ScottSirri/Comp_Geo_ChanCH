@@ -1,0 +1,22 @@
+1. Scott Sirri
+
+2. My applet is demonstrating the O(nlgh) convex hull algorithm developed by Timothy Chan.
+
+3. 
+
+	1.
+Convex hull is a significant and ubiquitous problem in computational geometry. Some algorithms for it, such as Graham's Scan, prove to be efficient but are not output-sensitive and therefore don't perform optimally on instances with small convex hulls. Other algorithms, like Jarvis's march, are output-sensitive but their runtime skyrockets when many points are on the convex hull. Chazelle and Matousek succeeded in developing an optimal output-sensitive algorithm with runtime O(nlgh), though it proved convoluted. Timothy Chan developed a simpler version of their algorithm with the same asymptotic complexity.
+User input is controlled to ensure it is meaningful and reasonable, including an upper limit on the number of points for the sake of the output's coherence. No other assumptions are made regarding general position nor scale.
+
+	2.
+The algorithm employs a "gift-wrapping" approach similar to Jarvis's March, but it reduces the asymptotic complexity by applying it over a set of smaller, sub-convex hulls calculated by Graham's Scan. Whenever a certain threshold is passed with regards to the size of the thus-far calculated convex hull, the algorithm restarts but with fewer and larger sub-convex hulls and a greater threshold. This continues until the correct output is calculated.
+I used code implementing mergesort from stackabuse.com/merge-sort-in-javascript written by Abhilash Kakumanu. I did not add any functionality besides adapting it to sort points on x-coordinates, as opposed to integers.
+
+	3.
+I animated the generation of points, partitioning of them into subsets, generation of sub-convex hulls, the calculation of tangents between convex hull points, and the march around the exterior.
+
+	4.
+Buttons are selectively disabled depending on the stage of the algorithm so it's clear to the user what the next step is and execution cannot be jumbled.
+I adhered strictly to the implementation of the algorithm except for the implementation of binary search to find the tangent on each convex hull. I just implemented a linear search because it's simpler, the practical runtime increase is negligible, and it would not serve any demonstratory purpose to implement it.
+I applied randomized color-coding to the points and hulls to improve the clarity of the display.
+I constrained the generation of points to within a margin from the canvas edges for ease of comprehension.

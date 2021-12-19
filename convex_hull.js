@@ -6,6 +6,18 @@ let currentCH = [];	// The current overall convex hull
 let canvasPtLen = 4;	// Side length of point drawn in plane
 let algo_t = 1;		// t parameter for determining subset sizes
 
+let prevStates = [];	// Array of Iter objects
+let currColors = [];
+
+const STATE_INIT = 0;			// Initial state
+const STATE_GEND_PTS = 1;		// Just generated the points
+const STATE_PARTD_PTS = 2;		// Just partitioned the points
+const STATE_GEND_HULLS = 3;		// Just generated the sub-convex hulls
+const STATE_CALCING_TANS = 4;	// Calculating the tangents
+
+let state = STATE_INIT;
+let repeatIter = false;
+
 //Graphics library utility
 let context;
 if(canvas.getContext) {
@@ -31,8 +43,10 @@ function generatePointsHandler() {
 	drawPoints(pointsArr);
 	buttonGeneratePts.disabled = true;
 	buttonPartitionPts.disabled = false;
+	buttonBack.disabled = false;
 	updateParamsLabel();
 	console.log(`Generated ${numPoints} points`);
+	state = STATE_GEND_PTS;
 }
 buttonGeneratePts.onclick = generatePointsHandler;
 
@@ -48,14 +62,20 @@ function partitionPtsHandler() {
 	let numSubsets = Math.ceil(arr.length / param);
 	
 	for(let i = 0; i < numSubsets && arr.length > 0; ++i) {
+		
 		let subset = arr.splice(0, param);
-		let color = "hsl(" + 360 * Math.random() + ',' + 
-					(25 + 70 * Math.random()) + '%,' + 
-					(55 + 10 * Math.random()) + '%)';
+		let color;
+		
+		if(!repeatIter) {
+			color = ranColor();
+			currColors.push(color);
+		} else color = currColors[i];
+		
 		for(let pt of subset) pt.color = color;
 		multiArr.push(subset);
 	}
 	
+	repeatIter = false;
 	subCHs = multiArr;
 	
 	clearCanvas();
@@ -65,8 +85,114 @@ function partitionPtsHandler() {
 	
 	console.log(`Partitioned ${pointsArr.length} points into 
 				${numSubsets} subsets`);
+	state = STATE_PARTD_PTS;
 }
 buttonPartitionPts.onclick = partitionPtsHandler;
+
+function buttonBackHandler() {
+
+	switch(state) {
+		case STATE_INIT:
+			console.log('Cannot backstep further');
+			break;
+			
+		case STATE_GEND_PTS:
+			assert(currentCH.length === 0);
+			assert(pointsArr.length > 0);
+			
+			// Restore previous state
+			if(prevStates.length > 0) {
+				console.log('Restoring previous state');
+				assert(currentCH.length === 0);
+				assert(algo_t > 1);
+				currColors = [];
+				
+				algo_t--;
+				let prevIter = prevStates.pop();
+				subCHs = prevIter.hulls;
+				for(let ch of subCHs) {
+					let color = prevIter.colors.shift();
+					for(let pt of ch) pt.color = color;
+					currColors.push(color);
+				}
+				currentCH = prevIter.partialCH;
+				
+				clearCanvas();
+				drawPoints(pointsArr);
+				drawSubCHs();
+				drawCurrentCH();
+				updateParamsLabel();
+				
+				state = STATE_CALCING_TANS;
+				
+				buttonNextTangent.disabled = false;
+				buttonCalculateTangents.disabled = false;
+				buttonPartitionPts.disabled = true;
+				repeatIter = true;
+				
+				break;
+			}
+			
+			algoReset();
+			buttonBack.disabled = true;
+			
+			state = STATE_INIT;
+			break;
+			
+		case STATE_PARTD_PTS:
+			assert(currentCH.length === 0);
+			assert(subCHs.length > 0);
+			assert(pointsArr.length > 0);
+			
+			subCHs = [];
+			clearCanvas();
+			resetPartitions();
+			drawPoints(pointsArr);
+			
+			buttonPartitionPts.disabled = false;
+			buttonCalculateCHs.disabled = true;
+			
+			state = STATE_GEND_PTS;
+			repeatIter = true;
+			break;
+			
+		case STATE_GEND_HULLS:
+			assert(subCHs.length > 0);
+			
+			clearCanvas();
+			drawPoints(pointsArr);
+			
+			buttonCalculateCHs.disabled = false;
+			buttonCalculateTangents.disabled = true;
+			buttonNextTangent.disabled = true;
+			
+			state = STATE_PARTD_PTS;
+			break;
+			
+		case STATE_CALCING_TANS:
+		
+			assert(currentCH.length > 0);
+			assert(subCHs.length > 0);
+			
+			currentCH.pop();
+			clearCanvas();
+			drawPoints(pointsArr);
+			drawSubCHs();
+			drawCurrentCH();
+			updateParamsLabel();
+			
+			if(currentCH.length === 1) {
+				currentCH.pop();
+				state = STATE_GEND_HULLS;
+				updateParamsLabel();
+			}
+			break;
+			
+		default:
+			
+	}
+}
+buttonBack.onclick = buttonBackHandler;
 
 /* Applies Graham's Scan to each sub-convex hull. Stores and draws the results.
  */
@@ -90,6 +216,7 @@ function generateCHsHandler() {
 	buttonCalculateCHs.disabled = true;
 	buttonCalculateTangents.disabled = false;
 	buttonNextTangent.disabled = false;
+	state = STATE_GEND_HULLS;
 }
 buttonCalculateCHs.onclick = generateCHsHandler;
 
@@ -97,6 +224,8 @@ buttonCalculateCHs.onclick = generateCHsHandler;
  * NOT update any global variables nor store its results.
  */
 function calculateTangentsHandler() {
+	
+	state = STATE_CALCING_TANS;
 	
 	let n = currentCH.length;
 	if(n == 0) {
@@ -144,6 +273,7 @@ buttonCalculateTangents.onclick = calculateTangentsHandler;
 /* Compute and draw the next tangent. Store results in global variables.
  */
 function nextTangentHandler() {
+	state = STATE_CALCING_TANS;
 	
 	let n = currentCH.length;
 	if(n == 0) {
@@ -157,6 +287,15 @@ function nextTangentHandler() {
 	// Hit upper limit, restart with revised parameters
 	if(n == calculateParam()) {
 		console.log('L incomplete');
+		
+		// Archive this state for the 'Back' button
+		let iter = new Iter(subCHs, currentCH, currColors);
+		prevStates.push(iter);
+		console.log('Archived state');
+		state = STATE_GEND_PTS;
+		currColors = [];
+		repeatIter = false;
+		
 		// End of inner Hull2D Iteration
 		currentCH = [];
 		clearCanvas();
@@ -196,22 +335,13 @@ function nextTangentHandler() {
 		if(cand.angle > maxAngPt.angle) maxAngPt = cand;
 	}
 	
+	currentCH.push(maxAngPt.pt);
+	
 	// Draw convex hull calculated up until now
 	clearCanvas();
 	drawPoints(pointsArr);
 	drawSubCHs();
 	drawCurrentCH();
-	
-	// Draw new tangent
-	context.strokeStyle = 'rgba(0,255,0,1)';
-	
-	context.beginPath();
-	context.moveTo(currentCH[n - 1].x, currentCH[n - 1].y);
-	context.lineTo(maxAngPt.pt.x, maxAngPt.pt.y);
-	context.closePath();
-	context.stroke();
-	
-	currentCH.push(maxAngPt.pt);
 	
 	if(Math.abs(currentCH[0].y - currentCH[1].y) < 1) {
 		currentCH.shift();	// Get rid of tempPt
@@ -258,49 +388,6 @@ function angle(p, q, r) {
 		angle += 180;
 	}
 	return angle;
-}
-
-/*
- * Code for mergesort and merge is taken from stackabuse.com
- * and is written by Abhilash Kakumanu.
- */
-function mergesortX(array) {
-  // Base case or terminating case
-  if(array.length < 2){
-    return array;
-  }
-  
-  const half = array.length / 2;
-  
-  const left = array.splice(0, half);
-  return merge(mergesortX(left), mergesortX(array));
-}
-
-/*
- * Code for mergesort and merge is taken from stackabuse.com
- * and is written by Abhilash Kakumanu.
- */
-function merge(left, right) {
-    let arr = [];
-    // Break out of loop if any one of the array gets empty
-    while (left.length && right.length) {
-        // Pick the smaller among the smallest element of left and right sub arrays 
-        if (left[0].x < right[0].x) {
-            arr.push(left.shift());
-        } else if (left[0].x > right[0].x) {
-            arr.push(right.shift());
-        } else if (left[0].x == right[0].x) {	// Lexicographical ordering to deal with degenerate case of dual x-coords
-			if (left[0].y < right[0].y) {
-				arr.push(left.shift());
-			} else {
-				arr.push(right.shift());
-			}
-		}
-    }
-    
-    // Concatenating the leftover elements
-    // (in case we didn't go through the entire left or right array)
-    return [ ...arr, ...left, ...right ]
 }
 
 /* Return the convex hull of the array of passed points without modifying the
@@ -385,6 +472,8 @@ function drawPolygon(arr, color = arr[0].color) {
  */
 function drawCurrentCH() {
 	
+	if(currentCH.length === 0) return;
+	
 	context.strokeStyle = 'rgba(0,0,0,.5)';
 	
 	context.beginPath();
@@ -392,6 +481,18 @@ function drawCurrentCH() {
 	for(let pt of currentCH) {
 		context.lineTo(pt.x, pt.y);
 	}
+	context.stroke();
+	
+	let n = currentCH.length;
+	if(n <= 1) return;
+	
+	// Draw new tangent
+	context.strokeStyle = 'rgba(0,255,0,1)';
+	
+	context.beginPath();
+	context.moveTo(currentCH[n - 2].x, currentCH[n - 2].y);
+	context.lineTo(currentCH[n - 1].x, currentCH[n - 1].y);
+	context.closePath();
 	context.stroke();
 }
 
@@ -430,6 +531,9 @@ function algoReset() {
 	buttonCalculateCHs.disabled = true;
 	buttonCalculateTangents.disabled = true;
 	buttonNextTangent.disabled = true;
+	buttonBack.disabled = true;
+	state = STATE_INIT;
+	updateParamsLabel();
 }
 buttonReset.onclick = algoReset;
 
@@ -460,4 +564,10 @@ function resetPartitions() {
 	for(let i = 0; i < pointsArr.length; ++i) {
 		pointsArr[i].color = 'rgba(200,0,0,.5)';
 	}
+}
+
+function ranColor() {
+	return "hsl(" + Math.floor(360 * Math.random()) + ',' + 
+			(25 + Math.floor(70 * Math.random())) + '%,' + 
+			(55 + Math.floor(10 * Math.random())) + '%)';
 }

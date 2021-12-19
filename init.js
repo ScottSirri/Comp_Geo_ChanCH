@@ -81,3 +81,68 @@ let buttonReset = document.createElement('button');
 buttonReset.innerHTML = 'Reset';
 buttonReset.id = 'buttonReset';
 divUI.appendChild(buttonReset);
+
+let buttonBack = document.createElement('button');
+buttonBack.innerHTML = 'Back';
+buttonBack.id = 'buttonBack';
+buttonBack.disabled = true;
+divUI.appendChild(buttonBack);
+
+class Iter {
+	constructor(hullsIn, chIn, colorsIn) {
+		this.hulls = hullsIn;
+		this.partialCH = chIn;
+		this.colors = colorsIn;
+	}
+}
+
+function assert(condition, msg = '') {
+	if(!condition) {
+		let str = (msg.length > 0) ? ': ' + msg : '';
+		throw new Error(`Assertion failed${str}`);
+	}
+}
+
+
+/*
+ * Code for mergesort and merge is taken from stackabuse.com
+ * and is written by Abhilash Kakumanu.
+ */
+function mergesortX(array) {
+  // Base case or terminating case
+  if(array.length < 2){
+    return array;
+  }
+  
+  const half = array.length / 2;
+  
+  const left = array.splice(0, half);
+  return merge(mergesortX(left), mergesortX(array));
+}
+
+/*
+ * Code for mergesort and merge is taken from stackabuse.com
+ * and is written by Abhilash Kakumanu.
+ */
+function merge(left, right) {
+    let arr = [];
+    // Break out of loop if any one of the array gets empty
+    while (left.length && right.length) {
+        // Pick the smaller among the smallest element of left and right sub arrays 
+        if (left[0].x < right[0].x) {
+            arr.push(left.shift());
+        } else if (left[0].x > right[0].x) {
+            arr.push(right.shift());
+        } else if (left[0].x == right[0].x) {	// Lexicographical ordering to deal with degenerate case of dual x-coords
+			if (left[0].y < right[0].y) {
+				arr.push(left.shift());
+			} else {
+				arr.push(right.shift());
+			}
+		}
+    }
+    
+    // Concatenating the leftover elements
+    // (in case we didn't go through the entire left or right array)
+    return [ ...arr, ...left, ...right ]
+}

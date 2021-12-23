@@ -527,11 +527,12 @@ function algoReset() {
 	clearCanvas();
 	algo_t = 1;
 	updateParamsLabel();
-	buttonGeneratePts.disabled = false;
-	buttonCalculateCHs.disabled = true;
+	buttonGeneratePts.disabled       = false;
+	buttonPartitionPts.disabled      = true;
+	buttonCalculateCHs.disabled      = true;
 	buttonCalculateTangents.disabled = true;
-	buttonNextTangent.disabled = true;
-	buttonBack.disabled = true;
+	buttonNextTangent.disabled       = true;
+	buttonBack.disabled              = true;
 	state = STATE_INIT;
 	updateParamsLabel();
 }
@@ -571,3 +572,11 @@ function ranColor() {
 			(25 + Math.floor(70 * Math.random())) + '%,' + 
 			(55 + Math.floor(10 * Math.random())) + '%)';
 }
+
+function resize() {
+	divCanvas.style.width = (window.innerWidth / 2) + 'px';
+	canvas.height=window.innerHeight - 20;
+	canvas.width=window.innerWidth / 2;
+	algoReset();
+}
+window.onresize = resize;

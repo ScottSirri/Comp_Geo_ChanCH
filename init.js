@@ -7,13 +7,15 @@ document.body.appendChild(divContainer);
 
 let divCanvas = document.createElement('div');
 divCanvas.id = 'divCanvas';
+divCanvas.style.width = (window.innerWidth / 2) + 'px';
 divContainer.appendChild(divCanvas);
 
 let canvas = document.createElement('canvas');
 canvas.id='canvas';
-canvas.height=550;
+canvas.height=window.innerHeight - 20;
+canvas.width=window.innerWidth / 2;
 divCanvas.appendChild(canvas);
-canvas.width=600;
+
 
 let divUI = document.createElement('div');
 divUI.id = 'divUI';

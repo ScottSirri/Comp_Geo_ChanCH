@@ -22,6 +22,7 @@ let repeatIter = false;
 let context;
 if(canvas.getContext) {
 	context = canvas.getContext('2d');
+	resize();
 }
 
 /* Generates, stores, and draws random points in plane.
@@ -574,9 +575,9 @@ function ranColor() {
 }
 
 function resize() {
-	divCanvas.style.width = (window.innerWidth / 2) + 'px';
+	divCanvas.style.width = (window.innerWidth - divUI.clientWidth - 60) + 'px';
 	canvas.height=window.innerHeight - 20;
-	canvas.width=window.innerWidth / 2;
+	canvas.width=divCanvas.clientWidth;
 	algoReset();
 }
 window.onresize = resize;

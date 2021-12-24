@@ -16,7 +16,6 @@ canvas.height=window.innerHeight - 20;
 canvas.width=window.innerWidth / 2;
 divCanvas.appendChild(canvas);
 
-
 let divUI = document.createElement('div');
 divUI.id = 'divUI';
 divContainer.appendChild(divUI);
